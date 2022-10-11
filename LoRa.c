@@ -1,15 +1,18 @@
 #include "LoRa.h"
 
 
-void spi2_init (SPI_HandleTypeDef* hspi2)
+spi_status spi2_init (SPI_HandleTypeDef* hspi2)
 { 
 	
 	/*init GPIO for spi2*/
-	__GPIOB_CLK_ENABLE();
+	//__GPIOB_CLK_ENABLE();
+	 __HAL_RCC_GPIOB_CLK_ENABLE();
+	
   GPIO_InitTypeDef GPIO_Spi2Struct;
+	
 	GPIO_Spi2Struct.Pin =  MOSI_Pin | SCK_Pin;
 	GPIO_Spi2Struct.Mode = GPIO_MODE_AF_PP;
-	GPIO_Spi2Struct.Speed = GPIO_SPEED_FREQ_HIGH;
+	GPIO_Spi2Struct.Speed = GPIO_SPEED_FREQ_LOW;
   GPIO_Spi2Struct.Pull = GPIO_NOPULL;
 	HAL_GPIO_Init(GPIOB, &GPIO_Spi2Struct );
 	
@@ -17,18 +20,30 @@ void spi2_init (SPI_HandleTypeDef* hspi2)
 	GPIO_Spi2Struct.Mode = GPIO_MODE_INPUT;
 	HAL_GPIO_Init(GPIOB, &GPIO_Spi2Struct );
 	
-	GPIO_Spi2Struct.Pin = CS_Pin;
+	GPIO_Spi2Struct.Pin = CS_Pin | NRESET_PIN;
 	GPIO_Spi2Struct.Mode = GPIO_MODE_OUTPUT_PP ;
+	GPIO_Spi2Struct.Pull = GPIO_NOPULL;
 	HAL_GPIO_Init(GPIOB, &GPIO_Spi2Struct );
+	
+	GPIO_Spi2Struct.Pin = DIO0_Pin;
+	GPIO_Spi2Struct.Mode = GPIO_MODE_IT_RISING;
+	GPIO_Spi2Struct.Pull = GPIO_NOPULL;
+	HAL_GPIO_Init(GPIOB, &GPIO_Spi2Struct );
+	
 	HAL_GPIO_WritePin(GPIOB, CS_Pin, GPIO_PIN_SET);
 	
+	 /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI15_10_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
+	
 	/*init spi2*/
-	__SPI2_CLK_ENABLE();
+	//__SPI2_CLK_ENABLE();
+	__HAL_RCC_SPI2_CLK_ENABLE();
 	hspi2->Instance = SPI2;
   hspi2->Init.Mode = SPI_MODE_MASTER;
   hspi2->Init.Direction = SPI_DIRECTION_2LINES;
   hspi2->Init.DataSize = SPI_DATASIZE_8BIT;
-  hspi2->Init.CLKPolarity = SPI_POLARITY_HIGH;
+  hspi2->Init.CLKPolarity = SPI_POLARITY_LOW;
   hspi2->Init.CLKPhase = SPI_PHASE_1EDGE;
   hspi2->Init.NSS = SPI_NSS_SOFT;
   hspi2->Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_2;
@@ -37,7 +52,15 @@ void spi2_init (SPI_HandleTypeDef* hspi2)
   hspi2->Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
   hspi2->Init.CRCPolynomial = 10;
   
-  HAL_SPI_Init(hspi2);
+  if(HAL_SPI_Init(hspi2) != HAL_OK)
+	{
+		 return SPI_ERROR;
+	}
+	else
+	{
+		 return SPI_OK;
+	}
+	
 
 }
 /* ----------------------------------------------------------------------------- *\
@@ -564,7 +587,7 @@ uint16_t LoRa_init(LoRa* _LoRa){
 			HAL_Delay(10);
 
 			read = LoRa_read(_LoRa, RegVersion);
-			if(read == 0x12)
+			if(read == 0x12) //default 0x12
 				return LORA_OK;
 			else
 				return LORA_NOT_FOUND;

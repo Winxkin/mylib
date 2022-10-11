@@ -11,10 +11,11 @@
 #define LORA_PORT GPIOB
 #define CS_Pin  GPIO_PIN_12
 #define MISO_Pin  GPIO_PIN_14
-#define MOSI_Pin  GPIO_PIN_15
+#define MOSI_Pin  GPIO_PIN_15 
 #define SCK_Pin  GPIO_PIN_13
 #define NRESET_PIN GPIO_PIN_10
 #define DIO0_Pin GPIO_PIN_11
+
 
 #define TRANSMIT_TIMEOUT	2000
 #define RECEIVE_TIMEOUT		2000
@@ -90,6 +91,12 @@
 #define LORA_LARGE_PAYLOAD	413
 #define LORA_UNAVAILABLE		503
 
+typedef enum spi_status
+{
+	SPI_OK = 1,
+	SPI_ERROR = 0,
+} spi_status;
+
 typedef struct LoRa_setting{
 	
 	// Hardware setings:
@@ -114,7 +121,7 @@ typedef struct LoRa_setting{
 } LoRa;
 
 
-void spi2_init (SPI_HandleTypeDef* hspi2);
+spi_status spi2_init (SPI_HandleTypeDef* hspi2);
 LoRa newLoRa(void);
 void LoRa_reset(LoRa* _LoRa);
 void LoRa_readReg(LoRa* _LoRa, uint8_t* address, uint16_t r_length, uint8_t* output, uint16_t w_length);
